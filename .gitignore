@@ -1,3 +1,19 @@
+# Custom
+
+Data/
+venv/Scripts
+.idea/
+
+
+
+
+
+
+
+
+
+# Default
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -81,11 +97,6 @@ celerybeat-schedule
 
 # dotenv
 .env
-
-# virtualenv
-.venv
-venv/
-ENV/
 
 # Spyder project settings
 .spyderproject

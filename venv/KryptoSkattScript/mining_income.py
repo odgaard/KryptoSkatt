@@ -14,6 +14,7 @@ USD_NOK_dict = dict()
 # All incoming transactions to my wallet
 with open(pathlib.PureWindowsPath(path + 'electrum-history.csv'), 'r') as f:
     x = f.read().split('\n')
+    total = 0
     for line in x:
         new_line = line.split(',')
         if(len(new_line) > 3):
@@ -21,7 +22,6 @@ with open(pathlib.PureWindowsPath(path + 'electrum-history.csv'), 'r') as f:
                 trans_in.append(new_line)
             if(new_line[3][0] == '-'):
                 trans_out.append(new_line)
-
 # Gather Bitcoin price index from
 # https://blockchain.info/charts/market-price?timespan=2years
 with open(pathlib.PureWindowsPath(path + 'market-price-last-2-years.csv'), 'r') as f:
@@ -43,17 +43,20 @@ with open(pathlib.PureWindowsPath(path + 'EXR.csv'), 'r') as f:
 
 # Calculate total income based on data
 def get_bitcoin_income(year):
-    total = 0
+    total_NOK = 0
+    total_BTC = 0
     USD_NOK_exchange = 8.652 #First day of the year
     for trans in trans_in:
         date = trans[4].split(' ')[0]
         check_date = date.split('-')
-        if(check_date[0] != year): continue
+        if(check_date[0] != year):
+            continue
         if(USD_NOK_dict.get(date)):
             USD_NOK_exchange = USD_NOK_dict[date]
         result = bitcoin_dict[date] * float(trans[3][1:]) * USD_NOK_exchange
-        total += result
-    return total
+        total_BTC += float(trans[3][1:])
+        total_NOK += result
+    return total_NOK, total_BTC
 
 def get_ethereum_income():
     total = 0
@@ -79,7 +82,8 @@ def get_ethereum_income():
     # Gather mining data from ethermine (my mining pool)
     # https://ethermine.org/api/miner
     with open(pathlib.PureWindowsPath(path + 'payouts.csv'), 'r') as f:
-        total = 0
+        total_NOK = 0
+        total_ETH = 0
         USD_NOK_exchange = 8.652 #First day of the year
         x = f.read().split('\n')
         for line in x[1:]:
@@ -92,29 +96,35 @@ def get_ethereum_income():
             if(USD_NOK_dict.get(date)):
                 USD_NOK_exchange = USD_NOK_dict[date]
             result = ethereum_dict[date]*amount*USD_NOK_exchange
-            total += result
-    return total
+
+            total_NOK += result
+            total_ETH += amount
+    return total_NOK, total_ETH
 
 def unix_time_to_date(timestamp):
     return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d')
 
-total_btc = get_bitcoin_income("2017")
-
-print("BTC:", round(total_btc, 2), "NOK")
-
-total_eth = get_ethereum_income()
-print("ETH:", round(total_eth, 2), "NOK")
-
-print("Total:", round(total_eth + total_btc), "NOK")
-
-
-
+total_income_btc_in_NOK, total_btc_in_BTC = get_bitcoin_income("2017")
+total_btc_in_BTC-=0.11362
+print("BTC Income:", round(total_income_btc_in_NOK, 2), "NOK")
+print("BTC Capital:")
+print(round(total_btc_in_BTC, 6), "BTC")
+total_btc_in_NOK = USD_NOK_dict["2017-12-29"]*bitcoin_dict["2017-12-31"]*total_btc_in_BTC
+print(round(total_btc_in_NOK, 2), "NOK")
+print()
+print()
 
 
 
+total_income_eth_in_NOK, total_eth_in_ETH = get_ethereum_income()
+print("ETH Income:", round(total_income_eth_in_NOK, 2), "NOK")
+print("ETH Capital:")
+print(round(total_eth_in_ETH, 4), "ETH")
+total_eth_in_NOK = USD_NOK_dict["2017-12-29"]*ethereum_dict["2017-12-31"]*total_eth_in_ETH
+print(round(total_eth_in_NOK, 2), "NOK")
+print()
+print()
 
-
-
-
-
+print("Total Income:", round(total_income_eth_in_NOK + total_income_btc_in_NOK), "NOK")
+print("Total capital:", round(total_eth_in_NOK + total_btc_in_NOK), "NOK")
 
